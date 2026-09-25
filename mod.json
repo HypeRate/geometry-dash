@@ -166,6 +166,12 @@
 			"type": "title",
 			"name": "Community"
 		},
+		"check-updates": {
+			"type": "bool",
+			"name": "Check for Updates",
+			"description": "Asks GitHub once per game start whether a newer version of the mod is out and lets you know in the main menu. Nothing about you is sent.",
+			"default": true
+		},
 		"community-actions": {
 			"type": "button",
 			"name": "HypeRate Discord",

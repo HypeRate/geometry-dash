@@ -3,6 +3,7 @@
 
 #include "Config.hpp"
 #include "HypeRateClient.hpp"
+#include "UpdateCheck.hpp"
 
 using namespace geode::prelude;
 
@@ -26,4 +27,5 @@ $on_mod(Loaded) {
     }).leak();
 
     HypeRateClient::get()->start();
+    update_check::start();
 }
