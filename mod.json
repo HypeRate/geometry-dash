@@ -67,7 +67,7 @@
 		"heart-style": {
 			"type": "custom:heart-style",
 			"name": "Heart Style",
-			"default": "geometry"
+			"default": "pixel"
 		},
 		"show-in-practice": {
 			"type": "bool",

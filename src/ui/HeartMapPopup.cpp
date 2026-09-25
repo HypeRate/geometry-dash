@@ -11,8 +11,9 @@
 using namespace geode::prelude;
 
 namespace {
-    constexpr CCSize kPopupSize = { 420.f, 300.f };
-    constexpr CCSize kGraphSize = { 380.f, 120.f };
+    // Kept below ~290 so the close button isn't cut off on 16:9 screens.
+    constexpr CCSize kPopupSize = { 420.f, 280.f };
+    constexpr CCSize kGraphSize = { 380.f, 108.f };
     constexpr CCSize kCardSize = { 122.f, 46.f };
 
     // Space inside the graph panel for the BPM labels (left) and heat band (bottom).
@@ -248,7 +249,10 @@ bool HeartGraph::init(CCSize size, HeartTrack const& attempt, HeartTrack const& 
         drawMarker(draw, peak, 3.f, zones::toColor4F(ccWHITE));
 
         auto peakLabel = createLabel(fmt::format("{}", attempt.peakBpm).c_str(), "bigFont.fnt", 0.35f);
-        peakLabel->setPosition(peak + CCPoint{ 0.f, 10.f });
+        // Near the left edge, move the label right so it doesn't cover the
+        // BPM labels of the axis.
+        float minX = plotLeft + peakLabel->getScaledContentWidth() / 2 + 2.f;
+        peakLabel->setPosition({ std::max(peak.x, minX), peak.y + 10.f });
         this->addChild(peakLabel);
     }
 
@@ -280,7 +284,7 @@ bool HeartMapPopup::initPopup(bool showHudButton) {
     this->addSubtitle(attempt, &attempt == &map.currentAttempt());
     this->addBranding(showHudButton);
 
-    float cardsY = 68.f;
+    float cardsY = 64.f;
 
     if (allTime.empty() && attempt.empty()) {
         auto empty = CCLabelBMFont::create(
@@ -291,13 +295,13 @@ bool HeartMapPopup::initPopup(bool showHudButton) {
         m_mainLayer->addChildAtPosition(empty, Anchor::Center, { 0.f, 10.f });
     }
     else {
-        float graphY = kPopupSize.height - 62.f - kGraphSize.height / 2;
+        float graphY = kPopupSize.height - 56.f - kGraphSize.height / 2;
         auto graph = HeartGraph::create(kGraphSize, attempt, allTime);
         graph->setPosition({ kPopupSize.width / 2, graphY });
         m_mainLayer->addChild(graph);
 
         auto legend = this->createLegend();
-        legend->setPosition({ kPopupSize.width / 2, graphY - kGraphSize.height / 2 - 12.f });
+        legend->setPosition({ kPopupSize.width / 2, graphY - kGraphSize.height / 2 - 11.f });
         m_mainLayer->addChild(legend);
 
         auto heart = CCSprite::create(heart_style::current());
@@ -374,7 +378,7 @@ void HeartMapPopup::addSubtitle(HeartTrack const& attempt, bool isCurrentAttempt
 
     auto label = createLabel(text.c_str(), "bigFont.fnt", 0.4f, kLabelColor);
     label->limitLabelWidth(kPopupSize.width - 80.f, 0.4f, 0.1f);
-    label->setPosition({ kPopupSize.width / 2, kPopupSize.height - 45.f });
+    label->setPosition({ kPopupSize.width / 2, kPopupSize.height - 42.f });
     m_mainLayer->addChild(label);
 }
 

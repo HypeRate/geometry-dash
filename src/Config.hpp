@@ -9,15 +9,22 @@
 // whenever any setting changes, which lets nodes cheaply check if they need to
 // re-apply their layout.
 struct Config {
+    // Where the HUD starts on first use (and after Reset in the HUD editor):
+    // top right corner, 100% size.
+    static constexpr float kDefaultHudX = 0.91f;
+    static constexpr float kDefaultHudY = 0.92f;
+    static constexpr float kDefaultHudScale = 1.f;
+    static constexpr int kDefaultHudOpacity = 255;
+
     std::string hyperateId;
     bool demoMode = false;
 
     bool showDisplay = true;
     bool showInPractice = true;
     bool hideWithoutSignal = true;
-    std::string heartStyle = "geometry";
-    float hudX = 0.08f;
-    float hudY = 0.88f;
+    std::string heartStyle = "pixel";
+    float hudX = kDefaultHudX;
+    float hudY = kDefaultHudY;
     float hudScale = 1.f;
     int hudOpacity = 255;
     bool pulseAnimation = true;

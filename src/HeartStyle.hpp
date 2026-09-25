@@ -7,6 +7,9 @@
 // The selectable heart sprites. All of them are grayscale with a black
 // outline, so tinting them with a zone color keeps the outline black.
 namespace heart_style {
+    // Selected on first use.
+    constexpr char const* kDefault = "pixel";
+
     struct Style {
         char const* id;    // value stored in the settings
         char const* name;  // shown in the picker

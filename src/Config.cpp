@@ -23,10 +23,10 @@ void Config::reload() {
     if (auto style = std::static_pointer_cast<HeartStyleSetting>(mod->getSetting("heart-style"))) {
         c.heartStyle = style->getValue();
     }
-    c.hudX = static_cast<float>(mod->getSavedValue<double>("hud-x", 0.08));
-    c.hudY = static_cast<float>(mod->getSavedValue<double>("hud-y", 0.88));
-    c.hudScale = static_cast<float>(mod->getSavedValue<double>("hud-scale", 1.0));
-    c.hudOpacity = static_cast<int>(mod->getSavedValue<int64_t>("hud-opacity", 255));
+    c.hudX = static_cast<float>(mod->getSavedValue<double>("hud-x", kDefaultHudX));
+    c.hudY = static_cast<float>(mod->getSavedValue<double>("hud-y", kDefaultHudY));
+    c.hudScale = static_cast<float>(mod->getSavedValue<double>("hud-scale", kDefaultHudScale));
+    c.hudOpacity = static_cast<int>(mod->getSavedValue<int64_t>("hud-opacity", kDefaultHudOpacity));
     c.pulseAnimation = mod->getSettingValue<bool>("pulse-animation");
     c.zoneColors = mod->getSettingValue<bool>("zone-colors");
     c.autoZones = mod->getSettingValue<bool>("auto-zones");

@@ -9,10 +9,6 @@ namespace {
     constexpr float kMinScale = 0.3f;
     constexpr float kMaxScale = 3.f;
 
-    constexpr float kDefaultX = 0.08f;
-    constexpr float kDefaultY = 0.88f;
-    constexpr float kDefaultScale = 1.f;
-    constexpr int kDefaultOpacity = 255;
     constexpr int kMinOpacity = 30;
     constexpr int kMaxOpacity = 255;
 
@@ -101,9 +97,9 @@ bool HudEditor::initEditor() {
 
     auto reset = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Reset", "goldFont.fnt", "GJ_button_04.png", 0.8f), [this](auto) {
         auto winSize = CCDirector::get()->getWinSize();
-        m_preview->setPosition({ kDefaultX * winSize.width, kDefaultY * winSize.height });
-        this->setHudScale(kDefaultScale);
-        this->setHudOpacity(kDefaultOpacity);
+        m_preview->setPosition({ Config::kDefaultHudX * winSize.width, Config::kDefaultHudY * winSize.height });
+        this->setHudScale(Config::kDefaultHudScale);
+        this->setHudOpacity(Config::kDefaultHudOpacity);
     });
     reset->setScale(0.7f);
     reset->m_baseScale = 0.7f;

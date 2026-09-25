@@ -26,7 +26,7 @@ namespace heart_style {
         for (auto const& style : kStyles) {
             if (id == style.id) return style.file;
         }
-        return kStyles[0].file;
+        return id == kDefault ? kStyles[0].file : file(kDefault);
     }
 
     char const* current() {
