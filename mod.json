@@ -1,0 +1,178 @@
+{
+	"geode": "5.10.1",
+	"gd": {
+		"win": "2.2081",
+		"android": "2.2081",
+		"mac": "2.2081",
+		"ios": "2.2081"
+	},
+	"id": "hyperate.gdhyperate",
+	"name": "HypeRate",
+	"version": "v0.1.0",
+	"developer": "HypeRate",
+	"description": "Your real heart rate, live in Geometry Dash.",
+	"repository": "https://github.com/HypeRate/geometry-dash",
+	"tags": ["enhancement", "interface", "customization", "gameplay", "online"],
+	"links": {
+		"homepage": "https://www.hyperate.io",
+		"community": "https://discord.gg/wQZu5HunUF"
+	},
+	"dependencies": {
+		"geode.node-ids": ">=v1.23.3"
+	},
+	"resources": {
+		"sprites": ["resources/*.png"],
+		"files": ["resources/cacert.pem"]
+	},
+	"settings": {
+		"connection-title": {
+			"type": "title",
+			"name": "Connection"
+		},
+		"hyperate-id": {
+			"type": "string",
+			"name": "HypeRate ID",
+			"description": "Your personal HypeRate ID. You can find it in the HypeRate app or on <cy>hyperate.io</c> (the last part of your overlay link).",
+			"default": "",
+			"filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
+		},
+		"connection-status": {
+			"type": "custom:connection-status",
+			"name": "Status",
+			"description": "Live connection to HypeRate. A new ID is used as soon as you press <cy>Apply</c>."
+		},
+		"demo-mode": {
+			"type": "bool",
+			"name": "Demo Mode",
+			"description": "Simulates a heart rate so you can try the mod without a sensor.",
+			"default": false
+		},
+
+		"display-title": {
+			"type": "title",
+			"name": "Display"
+		},
+		"show-display": {
+			"type": "bool",
+			"name": "Show Heart Rate",
+			"default": true
+		},
+		"hide-without-signal": {
+			"type": "bool",
+			"name": "Hide Without Signal",
+			"description": "Hides the heart rate display while no heart rate comes in and shows it again automatically.",
+			"default": true,
+			"enable-if": "show-display"
+		},
+		"heart-style": {
+			"type": "custom:heart-style",
+			"name": "Heart Style",
+			"default": "geometry"
+		},
+		"show-in-practice": {
+			"type": "bool",
+			"name": "Show in Practice Mode",
+			"default": true,
+			"enable-if": "show-display"
+		},
+		"hud-edit-info": {
+			"type": "title",
+			"name": "Position, size & opacity: pause menu > heart > Edit HUD",
+			"description": "Drag the heart rate display anywhere on screen and change its size and opacity."
+		},
+		"pulse-animation": {
+			"type": "bool",
+			"name": "Beating Heart",
+			"description": "The heart beats in sync with your real heart rate.",
+			"default": true
+		},
+		"zone-colors": {
+			"type": "bool",
+			"name": "Zone Colors",
+			"description": "Colors the display from calm (green) to panic (red).",
+			"default": true
+		},
+		"auto-zones": {
+			"type": "bool",
+			"name": "Automatic Zones",
+			"description": "Everybody's heart is different. While you play, the mod learns your normal heart rate and sets the colors around it: <cg>green</c> is your usual, <cy>yellow</c> is getting tense and <cr>red</c> is well above your normal.\n\nIt needs about <cy>two minutes of playing</c> to get started and keeps adjusting over time. Turn it off to set your own limits instead.",
+			"default": true
+		},
+		"zone-info": {
+			"type": "custom:zone-info",
+			"name": "Your Zones",
+			"description": "What Automatic Zones has learned so far. Press Relearn to start over, for example after you changed your sensor."
+		},
+		"zone-calm": {
+			"type": "int",
+			"name": "Calm up to (BPM)",
+			"default": 90,
+			"min": 40,
+			"max": 220,
+			"enable-if": "!auto-zones"
+		},
+		"zone-panic": {
+			"type": "int",
+			"name": "Panic from (BPM)",
+			"default": 140,
+			"min": 40,
+			"max": 240,
+			"enable-if": "!auto-zones"
+		},
+
+		"heart-map-title": {
+			"type": "title",
+			"name": "Heart Map"
+		},
+		"heart-map-on-complete": {
+			"type": "bool",
+			"name": "Heart Map After Completing",
+			"description": "Opens the Heart Map automatically when you complete a level - handy for a screenshot.",
+			"default": false
+		},
+		"heat-strip": {
+			"type": "bool",
+			"name": "Heatmap on Progress Bar",
+			"description": "Colors a strip under the progress bar by your heart rate at each part of the level, so you can see where you get nervous.\nOpen the full <cy>Heart Map</c> with the heart button in the pause menu.",
+			"default": true
+		},
+
+		"challenge-title": {
+			"type": "title",
+			"name": "Challenge"
+		},
+		"death-mode": {
+			"type": "bool",
+			"name": "Ice Cold Mode",
+			"description": "You die when your heart rate reaches the limit. Stay calm!\n<cy>Only makes the game harder - it never helps you.</c>",
+			"default": false
+		},
+		"death-bpm": {
+			"type": "int",
+			"name": "Heart Rate Limit (BPM)",
+			"default": 130,
+			"min": 50,
+			"max": 250,
+			"enable-if": "death-mode"
+		},
+		"death-in-practice": {
+			"type": "bool",
+			"name": "Also in Practice Mode",
+			"default": false,
+			"enable-if": "death-mode"
+		},
+
+		"community-title": {
+			"type": "title",
+			"name": "Community"
+		},
+		"community-actions": {
+			"type": "button",
+			"name": "HypeRate Discord",
+			"description": "Opens the HypeRate Discord invite in your browser.",
+			"buttons": {
+				"discord": "Join"
+			}
+		}
+	}
+}

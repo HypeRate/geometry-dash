@@ -1,0 +1,15 @@
+# Secrets - never commit the HypeRate API key
+api-key.txt
+.env
+
+# Build output
+build/
+build-*/
+*.geode
+
+# IDE / OS
+.vscode/
+.idea/
+.cache/
+.DS_Store
+compile_commands.json
