@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HypeRate for Geometry Dash</title>
+<meta name="description" content="Your real heart rate, live in Geometry Dash. See where in a level you start to panic.">
+<meta property="og:title" content="HypeRate for Geometry Dash">
+<meta property="og:description" content="Your real heart rate, live in Geometry Dash. See where in a level you start to panic.">
+<meta property="og:image" content="assets/heart-map.png">
+<meta name="theme-color" content="#2a1a6e">
+<link rel="icon" type="image/png" href="assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-top: #3a1fa8;
+    --bg-bottom: #16103f;
+    --ground: #1c0f5c;
+    --ground-line: #d9c8ff;
+    --calm: #50e678;
+    --tense: #ffcd3c;
+    --panic: #ff3750;
+    --gold-top: #ffec78;
+    --gold-bottom: #ffaa14;
+    --panel: #a45a2e;
+    --panel-dark: #4a2510;
+    --panel-border: #c47034;
+    --text: #ffffff;
+    --text-soft: #d8ccff;
+    --outline: #000000;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: "Nunito", system-ui, sans-serif;
+    font-weight: 600;
+    color: var(--text);
+    background: var(--bg-bottom);
+    overflow-x: hidden;
+  }
+  img { max-width: 100%; display: block; }
+  a { color: inherit; }
+
+  /* GD-style outlined text */
+  .gd {
+    font-family: "Lilita One", "Nunito", sans-serif;
+    font-weight: 400;
+    letter-spacing: .01em;
+    -webkit-text-stroke: .08em var(--outline);
+    paint-order: stroke fill;
+    text-shadow: 0 .09em 0 rgba(0,0,0,.45);
+  }
+  .gold {
+    background: linear-gradient(var(--gold-top), var(--gold-bottom));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-stroke: 0;
+    filter: drop-shadow(0 0 0 #000) drop-shadow(2px 0 0 #000) drop-shadow(-2px 0 0 #000) drop-shadow(0 2px 0 #000) drop-shadow(0 -2px 0 #000) drop-shadow(0 4px 0 rgba(0,0,0,.45));
+  }
+
+  /* ---------- Level progress bar (scroll = playing the level) ---------- */
+  .progress {
+    position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+    width: min(420px, calc(100% - 140px)); height: 18px; z-index: 20;
+    background: rgba(0,0,0,.55); border: 3px solid #fff; border-radius: 99px; overflow: hidden;
+    box-shadow: 0 3px 0 rgba(0,0,0,.4);
+  }
+  .progress-fill { height: 100%; width: 0%; background: linear-gradient(#7dff5a, #33c21a); border-radius: 99px; }
+  .progress-label {
+    position: fixed; top: 6px; z-index: 21; font-size: 20px;
+    left: calc(50% + min(210px, 50% - 70px) + 12px);
+  }
+  .lang {
+    position: fixed; top: 8px; right: 12px; z-index: 22; display: flex; gap: 6px;
+  }
+  .lang button {
+    font: inherit; font-family: "Lilita One", sans-serif; font-size: 15px; cursor: pointer;
+    color: #fff; background: rgba(0,0,0,.5); border: 2px solid rgba(255,255,255,.6);
+    border-radius: 10px; padding: 3px 9px;
+  }
+  .lang button[aria-pressed="true"] { background: linear-gradient(#7dff5a, #2fb51a); border-color: #fff; -webkit-text-stroke: 3px #000; paint-order: stroke fill; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative; min-height: 100vh; min-height: 100svh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 90px 16px 190px; text-align: center; overflow: hidden;
+    background:
+      linear-gradient(rgba(255,255,255,.035) 2px, transparent 2px) 0 0 / 90px 90px,
+      linear-gradient(90deg, rgba(255,255,255,.035) 2px, transparent 2px) 0 0 / 90px 90px,
+      linear-gradient(var(--bg-top), #241673 70%, var(--bg-bottom));
+  }
+  .blocks { position: absolute; inset: 0; pointer-events: none; }
+  .blocks span {
+    position: absolute; border: 3px solid rgba(255,255,255,.08); background: rgba(255,255,255,.04); border-radius: 6px;
+  }
+  .hero-logo { width: 112px; border-radius: 26px; box-shadow: 0 8px 0 rgba(0,0,0,.35); animation: beat 1s infinite; }
+  .hero h1 { font-size: clamp(44px, 8vw, 96px); line-height: .95; margin: 22px 0 10px; }
+  .hero h1 .accent { color: var(--panic); }
+  .hero p.lead { font-size: clamp(18px, 2.4vw, 23px); color: var(--text-soft); max-width: 640px; margin: 0 auto 30px; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px; text-decoration: none;
+    font-family: "Lilita One", sans-serif; font-size: 24px; color: #fff;
+    padding: 14px 28px; border-radius: 16px; border: 4px solid #000;
+    -webkit-text-stroke: 5px #000; paint-order: stroke fill;
+    box-shadow: inset 0 -6px 0 rgba(0,0,0,.25), inset 0 4px 0 rgba(255,255,255,.35), 0 6px 0 rgba(0,0,0,.45);
+    transition: transform .08s;
+  }
+  .btn:hover { transform: translateY(-2px) scale(1.03); }
+  .btn:active { transform: translateY(2px) scale(.98); }
+  .btn-green { background: linear-gradient(#8cff5f, #2fb51a); }
+  .btn-dark { background: linear-gradient(#5d4bc4, #34288a); }
+  .btn small { font-size: 14px; opacity: .9; }
+  .hero-note { margin-top: 16px; color: var(--text-soft); font-size: 15px; }
+
+  /* Ground with spikes and a jumping cube */
+  .ground {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 120px;
+    background: linear-gradient(#2b1a86, var(--ground));
+    border-top: 3px solid var(--ground-line);
+    box-shadow: 0 -2px 18px rgba(217,200,255,.6);
+  }
+  .ground::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, rgba(255,255,255,.05) 2px, transparent 2px) 0 0 / 120px 120px;
+  }
+  .track { position: absolute; left: 0; right: 0; bottom: 120px; height: 90px; pointer-events: none; }
+  .spike {
+    position: absolute; bottom: 0; width: 0; height: 0;
+    border-left: 20px solid transparent; border-right: 20px solid transparent; border-bottom: 40px solid #000;
+    filter: drop-shadow(0 0 3px rgba(255,255,255,.8));
+  }
+  .cube {
+    position: absolute; bottom: 0; left: calc(50% - 22px); width: 44px; height: 44px;
+    background: #49e02a; border: 4px solid #000; border-radius: 4px;
+    box-shadow: inset 0 0 0 5px #49e02a, inset 0 0 0 9px #000, inset 0 0 0 13px #1ad1ff;
+    animation: jump 1.1s cubic-bezier(.3,.7,.4,1) infinite;
+  }
+  .scroll-hint { position: absolute; bottom: 48px; left: 50%; transform: translateX(-50%); z-index: 1; font-size: 15px; color: var(--text-soft); opacity: .85; white-space: nowrap; }
+
+  @keyframes jump {
+    0% { transform: translateY(0) rotate(0); }
+    45% { transform: translateY(-78px) rotate(90deg); }
+    90%, 100% { transform: translateY(0) rotate(180deg); }
+  }
+  @keyframes beat {
+    0%, 60%, 100% { transform: scale(1); }
+    12% { transform: scale(1.12); }
+    28% { transform: scale(1.02); }
+  }
+
+  /* ---------- Sections ---------- */
+  section { padding: 80px 16px; }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  .section-title { font-size: clamp(34px, 5vw, 56px); text-align: center; margin: 0 0 10px; }
+  .section-lead { text-align: center; color: var(--text-soft); font-size: 19px; max-width: 680px; margin: 0 auto 44px; }
+  .alt { background: linear-gradient(#1d1356, #16103f); }
+
+  /* GD-style popup panel */
+  .panel {
+    background: var(--panel); border: 4px solid #fff; border-radius: 22px; padding: 26px;
+    box-shadow: 0 0 0 4px #000, 0 10px 0 4px rgba(0,0,0,.35);
+  }
+  .inset {
+    background: #3e1f0c; border: 3px solid var(--panel-border); border-radius: 16px; padding: 18px;
+  }
+
+  /* HUD demo */
+  .demo { display: grid; grid-template-columns: 1.1fr .9fr; gap: 28px; align-items: center; }
+  .demo-stage {
+    position: relative; aspect-ratio: 16 / 9; border-radius: 22px; overflow: hidden;
+    border: 4px solid #fff; box-shadow: 0 0 0 4px #000, 0 10px 0 4px rgba(0,0,0,.35);
+    background:
+      linear-gradient(rgba(255,255,255,.05) 2px, transparent 2px) 0 0 / 60px 60px,
+      linear-gradient(90deg, rgba(255,255,255,.05) 2px, transparent 2px) 0 0 / 60px 60px,
+      linear-gradient(#9b10e8, #6a06b8);
+  }
+  .demo-stage .floor { position: absolute; left: 0; right: 0; bottom: 0; height: 22%; background: #5205a0; border-top: 3px solid #e7c6ff; }
+  .demo-stage .cube { left: 22%; bottom: 22%; width: 34px; height: 34px; border-width: 3px; box-shadow: inset 0 0 0 4px #49e02a, inset 0 0 0 7px #000, inset 0 0 0 10px #1ad1ff; }
+  .hud { position: absolute; top: 6%; right: 5%; display: flex; align-items: center; gap: 10px; }
+  /* Heart sprites are grayscale; a multiplied color layer tints them like the
+     game does, so the black outline stays black. */
+  .tint { position: relative; display: inline-block; line-height: 0; isolation: isolate; }
+  .tint img { width: 100%; }
+  .tint i {
+    position: absolute; inset: 0; background: var(--c, #ff3750); mix-blend-mode: multiply;
+    -webkit-mask: var(--m) center / contain no-repeat; mask: var(--m) center / contain no-repeat;
+    transition: background .6s;
+  }
+  .pixel img { image-rendering: pixelated; }
+  .hud-heart { width: clamp(38px, 7vw, 62px); }
+  .hud-heart.beat { animation: beat-once .25s ease-out; }
+  @keyframes beat-once { 0% { transform: scale(1); } 35% { transform: scale(1.18); } 100% { transform: scale(1); } }
+  .hud-bpm { font-size: clamp(30px, 5.4vw, 50px); line-height: .9; transition: color .6s; }
+  .hud-unit { font-size: clamp(14px, 2.2vw, 20px); display: block; }
+  .zone-pill { display: inline-block; font-family: "Lilita One"; padding: 4px 12px; border-radius: 99px; border: 3px solid #000; color: #000; transition: background .6s; }
+
+  .styles { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+  .style-btn {
+    cursor: pointer; background: #3e1f0c; border: 3px solid var(--panel-border); border-radius: 14px; padding: 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 4px; font: inherit; color: #fff; font-size: 13px;
+  }
+  .style-btn .tint { width: 46px; }
+  .style-btn[aria-pressed="true"] { border-color: var(--gold-top); background: #6b3a14; box-shadow: 0 0 0 3px #000; }
+
+  /* Heart Map */
+  .map { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: center; }
+  .chart { width: 100%; height: auto; display: block; }
+  .chart .line { stroke-dasharray: 1200; stroke-dashoffset: 1200; }
+  .chart.visible .line { animation: draw 2.2s ease-out forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  .screenshot { border-radius: 18px; border: 4px solid #fff; box-shadow: 0 0 0 4px #000, 0 10px 0 4px rgba(0,0,0,.35); }
+
+  /* Feature cards */
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  .card { padding: 22px; }
+  .card h3 { font-size: 26px; margin: 0 0 8px; }
+  .card p { margin: 0; line-height: 1.5; color: #fbe9d8; }
+  .card .icon { font-size: 34px; margin-bottom: 8px; line-height: 1; }
+
+  /* Steps */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; counter-reset: step; }
+  .step { position: relative; padding: 26px 22px 22px; }
+  .step::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; top: -22px; left: 22px; width: 46px; height: 46px; border-radius: 50%;
+    display: grid; place-items: center; font-family: "Lilita One"; font-size: 26px;
+    background: linear-gradient(#8cff5f, #2fb51a); border: 4px solid #000; -webkit-text-stroke: 4px #000; paint-order: stroke fill;
+  }
+  .step h3 { font-size: 24px; margin: 8px 0 6px; }
+  .step p { margin: 0; line-height: 1.5; color: #fbe9d8; }
+  code { background: rgba(0,0,0,.35); padding: 1px 6px; border-radius: 6px; }
+
+  /* FAQ */
+  .faq { max-width: 780px; margin: 0 auto; display: grid; gap: 14px; }
+  details { padding: 0; }
+  summary { cursor: pointer; list-style: none; padding: 18px 22px; font-size: 22px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; float: right; }
+  details[open] summary::after { content: "–"; }
+  details p { margin: 0; padding: 0 22px 20px; line-height: 1.55; color: #fbe9d8; }
+
+  footer { padding: 50px 16px 60px; text-align: center; color: var(--text-soft); }
+  footer .links { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; margin: 16px 0; }
+  footer img { width: 56px; border-radius: 14px; margin: 0 auto; }
+
+  @media (max-width: 860px) {
+    .demo, .map { grid-template-columns: 1fr; }
+    .cards, .steps { grid-template-columns: 1fr; }
+    .steps { gap: 34px; }
+    .progress-label { display: none; }
+    .progress { left: 16px; transform: none; width: calc(100% - 130px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .chart .line { stroke-dashoffset: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></div>
+<div class="progress-label gd" id="progressLabel" aria-hidden="true">0%</div>
+<div class="lang" role="group" aria-label="Language">
+  <button type="button" data-lang="en" aria-pressed="true">EN</button>
+  <button type="button" data-lang="de" aria-pressed="false">DE</button>
+</div>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="blocks" aria-hidden="true" id="blocks"></div>
+  <img class="hero-logo" src="assets/logo.png" alt="HypeRate logo">
+  <h1 class="gd"><span data-i18n="hero.title1">Your heart.</span><br><span class="accent" data-i18n="hero.title2">Every jump.</span></h1>
+  <p class="lead" data-i18n="hero.lead">The official HypeRate mod puts your live heart rate into Geometry Dash and shows you exactly where in a level you start to panic.</p>
+  <div class="buttons">
+    <a class="btn btn-green" href="https://github.com/HypeRate/geometry-dash/releases/latest/download/hyperate.gdhyperate.geode">
+      <span data-i18n="hero.download">Download</span> <small>.geode</small>
+    </a>
+    <a class="btn btn-dark" href="#install" data-i18n="hero.how">How to install</a>
+  </div>
+  <p class="hero-note" data-i18n="hero.note">Free · Windows, macOS, Android &amp; iOS · Needs Geode</p>
+
+  <div class="track" aria-hidden="true">
+    <div class="spike" style="left: calc(50% + 150px)"></div>
+    <div class="spike" style="left: calc(50% + 190px)"></div>
+    <div class="spike" style="left: calc(50% - 260px)"></div>
+    <div class="cube"></div>
+  </div>
+  <div class="ground" aria-hidden="true"></div>
+  <div class="scroll-hint" data-i18n="hero.scroll">Scroll to play the level ↓</div>
+</header>
+
+<!-- ============ LIVE DEMO ============ -->
+<section id="demo">
+  <div class="wrap">
+    <h2 class="section-title gd gold" data-i18n="demo.title">A heart that beats with yours</h2>
+    <p class="section-lead" data-i18n="demo.lead">A little heart in the corner pulses at your real heart rate and turns from green to yellow to red as things get tense.</p>
+    <div class="demo">
+      <div class="demo-stage" aria-label="Animated preview of the heart rate display">
+        <div class="hud">
+          <span class="tint hud-heart pixel" id="hudHeart" style="--c: #50e678; --m: url(assets/heart_pixel.png)"><img src="assets/heart_pixel.png" alt=""><i></i></span>
+          <div>
+            <span class="hud-bpm gd" id="hudBpm">72</span>
+            <span class="hud-unit gd gold">BPM</span>
+          </div>
+        </div>
+        <div class="cube" aria-hidden="true"></div>
+        <div class="floor" aria-hidden="true"></div>
+      </div>
+      <div class="panel">
+        <h3 class="gd gold" style="font-size: 28px; margin: 0 0 10px" data-i18n="demo.zonesTitle">Colors that fit your heart</h3>
+        <p style="margin: 0 0 14px; line-height: 1.55; color: #fbe9d8" data-i18n="demo.zonesText">Everybody's heart is different. While you play, the mod learns your normal heart rate and sets green, yellow and red around it – whether you usually sit at 70 or at 110.</p>
+        <p style="margin: 0"><span data-i18n="demo.now">Right now:</span> <span class="zone-pill" id="zonePill" data-i18n="zone.calm">calm</span></p>
+        <h3 class="gd gold" style="font-size: 24px; margin: 22px 0 0" data-i18n="demo.stylesTitle">Pick your heart</h3>
+        <div class="styles" id="styles">
+          <button type="button" class="style-btn" data-style="pixel" aria-pressed="true"><span class="tint pixel" style="--m: url(assets/heart_pixel.png)"><img src="assets/heart_pixel.png" alt=""><i></i></span>Pixel</button>
+          <button type="button" class="style-btn" data-style="geometry" aria-pressed="false"><span class="tint" style="--m: url(assets/heart_geometry.png)"><img src="assets/heart_geometry.png" alt=""><i></i></span>Geometry</button>
+          <button type="button" class="style-btn" data-style="crystal" aria-pressed="false"><span class="tint" style="--m: url(assets/heart_crystal.png)"><img src="assets/heart_crystal.png" alt=""><i></i></span>Crystal</button>
+          <button type="button" class="style-btn" data-style="smooth" aria-pressed="false"><span class="tint" style="--m: url(assets/heart_smooth.png)"><img src="assets/heart_smooth.png" alt=""><i></i></span>Smooth</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HEART MAP ============ -->
+<section class="alt" id="heartmap">
+  <div class="wrap">
+    <h2 class="section-title gd gold" data-i18n="map.title">The Heart Map</h2>
+    <p class="section-lead" data-i18n="map.lead">Every attempt is recorded against your progress through the level. After a few runs you can literally see which part gets to you.</p>
+    <div class="map">
+      <div class="panel">
+        <div class="inset">
+          <svg class="chart" id="chart" viewBox="0 0 520 250" role="img" aria-label="Heart rate over level progress">
+            <defs>
+              <linearGradient id="heat" x1="0" x2="1">
+                <stop offset="0" stop-color="#50e678"/>
+                <stop offset=".45" stop-color="#50e678"/>
+                <stop offset=".62" stop-color="#ffcd3c"/>
+                <stop offset=".78" stop-color="#ff3750"/>
+                <stop offset=".88" stop-color="#ffcd3c"/>
+                <stop offset="1" stop-color="#50e678"/>
+              </linearGradient>
+              <linearGradient id="lineColor" x1="0" x2="1">
+                <stop offset="0" stop-color="#50e678"/>
+                <stop offset=".5" stop-color="#9be35a"/>
+                <stop offset=".72" stop-color="#ff7a3c"/>
+                <stop offset=".8" stop-color="#ff3750"/>
+                <stop offset="1" stop-color="#ffcd3c"/>
+              </linearGradient>
+            </defs>
+            <g stroke="rgba(255,230,205,.2)" stroke-dasharray="6 5" stroke-width="1.5">
+              <line x1="52" y1="30" x2="505" y2="30"/><line x1="52" y1="105" x2="505" y2="105"/>
+              <line x1="142" y1="20" x2="142" y2="180"/><line x1="233" y1="20" x2="233" y2="180"/>
+              <line x1="324" y1="20" x2="324" y2="180"/><line x1="414" y1="20" x2="414" y2="180"/>
+            </g>
+            <line x1="52" y1="20" x2="52" y2="180" stroke="rgba(255,230,205,.5)" stroke-width="2"/>
+            <line x1="52" y1="180" x2="505" y2="180" stroke="rgba(255,230,205,.5)" stroke-width="2"/>
+            <g font-family="Lilita One" font-size="16" fill="#ebd7b9" text-anchor="end">
+              <text x="44" y="35">160</text><text x="44" y="110">120</text><text x="44" y="185">80</text>
+            </g>
+            <path class="line" fill="none" stroke="url(#lineColor)" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"
+              d="M56 150 L110 150 L118 142 L170 142 L178 150 L230 146 L250 132 L290 128 L310 108 L335 96 L352 70 L372 58 L392 76 L412 94 L440 112 L470 122 L500 124"/>
+            <circle cx="372" cy="58" r="7" fill="#fff" stroke="#000" stroke-width="3"/>
+            <text x="372" y="44" text-anchor="middle" font-family="Lilita One" font-size="18" fill="#fff" stroke="#000" stroke-width="4" paint-order="stroke">164</text>
+            <rect x="56" y="200" width="449" height="16" rx="3" fill="url(#heat)"/>
+            <text x="56" y="240" font-family="Lilita One" font-size="15" fill="#ebd7b9" data-i18n="map.axis">0% · · · · · · · · · · · · level progress · · · · · · · · · · · · 100%</text>
+          </svg>
+        </div>
+      </div>
+      <img class="screenshot" src="assets/heart-map.png" alt="The Heart Map in Geometry Dash" loading="lazy">
+    </div>
+  </div>
+</section>
+
+<!-- ============ FEATURES ============ -->
+<section id="features">
+  <div class="wrap">
+    <h2 class="section-title gd gold" data-i18n="features.title">What's in it</h2>
+    <p class="section-lead" data-i18n="features.lead">Everything you need to see what your heart is up to – and nothing you don't.</p>
+    <div class="cards">
+      <div class="panel card"><div class="icon">❤️</div><h3 class="gd gold" data-i18n="f1.t">Live heart rate</h3><p data-i18n="f1.d">Enter your HypeRate ID and your pulse shows up in every level. Works with most smartwatches, fitness bands and chest straps.</p></div>
+      <div class="panel card"><div class="icon">🗺️</div><h3 class="gd gold" data-i18n="f2.t">Heart Map</h3><p data-i18n="f2.d">Your pulse from 0 to 100% for every attempt, with peak, average and an all-time heatmap of the level.</p></div>
+      <div class="panel card"><div class="icon">🏆</div><h3 class="gd gold" data-i18n="f3.t">Stats per level</h3><p data-i18n="f3.d">Your best run, your highest heart rate and your calmest clear – remembered for every level you play.</p></div>
+      <div class="panel card"><div class="icon">🧊</div><h3 class="gd gold" data-i18n="f4.t">Ice Cold Mode</h3><p data-i18n="f4.d">Set a heart rate limit. Go over it and you die. It only ever makes the game harder, never easier.</p></div>
+      <div class="panel card"><div class="icon">🎨</div><h3 class="gd gold" data-i18n="f5.t">Make it yours</h3><p data-i18n="f5.d">Drag the display anywhere, change its size and opacity, and pick one of four heart styles.</p></div>
+      <div class="panel card"><div class="icon">🔒</div><h3 class="gd gold" data-i18n="f6.t">Private by design</h3><p data-i18n="f6.d">The mod only receives your heart rate. Nothing about your gameplay leaves your device.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ INSTALL ============ -->
+<section class="alt" id="install">
+  <div class="wrap">
+    <h2 class="section-title gd gold" data-i18n="install.title">Get it running</h2>
+    <p class="section-lead" data-i18n="install.lead">Takes about two minutes. You need Geometry Dash with the Geode mod loader.</p>
+    <div class="steps">
+      <div class="panel step"><h3 class="gd" data-i18n="s1.t">Get HypeRate</h3><p data-i18n="s1.d">Install the HypeRate app, connect your watch or strap and copy your HypeRate ID.</p></div>
+      <div class="panel step"><h3 class="gd" data-i18n="s2.t">Install the mod</h3><p data-i18n="s2.html">Download <code>hyperate.gdhyperate.geode</code>. In Geometry Dash open <b>Geode → Settings → Install from file</b> and pick the file. Geode shows a short warning for files from outside its mod list – that's normal.</p></div>
+      <div class="panel step"><h3 class="gd" data-i18n="s3.t">Enter your ID</h3><p data-i18n="s3.d">Open the mod settings, paste your ID and press Apply. The status line turns green once your heart rate comes in. Done!</p></div>
+    </div>
+    <div class="buttons" style="margin-top: 36px">
+      <a class="btn btn-green" href="https://github.com/HypeRate/geometry-dash/releases/latest/download/hyperate.gdhyperate.geode"><span data-i18n="hero.download">Download</span> <small>.geode</small></a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section id="faq">
+  <div class="wrap">
+    <h2 class="section-title gd gold" data-i18n="faq.title">Questions</h2>
+    <div class="faq">
+      <details class="panel"><summary class="gd" data-i18n="q1.q">Do I need a special sensor?</summary><p data-i18n="q1.a">No. Anything that works with the HypeRate app works here – most smartwatches, fitness bands and chest straps. No sensor at hand? Turn on Demo Mode in the mod settings and try everything with a simulated heart rate.</p></details>
+      <details class="panel"><summary class="gd" data-i18n="q2.q">Is it free?</summary><p data-i18n="q2.a">Yes, the mod is free. You just need a HypeRate account for your heart rate.</p></details>
+      <details class="panel"><summary class="gd" data-i18n="q3.q">How do I get updates?</summary><p data-i18n="q3.a">The mod checks for new versions when you start the game and tells you in the main menu. One click takes you to the download.</p></details>
+      <details class="panel"><summary class="gd" data-i18n="q4.q">Why isn't it in the Geode mod list?</summary><p data-i18n="q4.a">We built this mod with a lot of help from AI tools, and the Geode mod list doesn't accept mods made that way. So we publish it here instead. We tested everything ourselves and keep maintaining it.</p></details>
+      <details class="panel"><summary class="gd" data-i18n="q5.q">Does it make the game easier?</summary><p data-i18n="q5.a">Never. The display is just information, and Ice Cold Mode can only make you die more often.</p></details>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <img src="assets/logo.png" alt="HypeRate">
+  <div class="links">
+    <a href="https://www.hyperate.io">hyperate.io</a>
+    <a href="https://discord.gg/wQZu5HunUF">Discord</a>
+    <a href="https://github.com/HypeRate/geometry-dash">GitHub</a>
+  </div>
+  <p data-i18n="footer.note">Made by HypeRate. Geometry Dash is a game by RobTop Games – this mod is not affiliated with or endorsed by RobTop.</p>
+</footer>
+
+<script>
+(function () {
+  // ---------- Translations ----------
+  var T = {
+    de: {
+      "hero.title1": "Dein Herz.",
+      "hero.title2": "Jeder Sprung.",
+      "hero.lead": "Die offizielle HypeRate-Mod bringt deinen Live-Puls in Geometry Dash und zeigt dir genau, wo im Level du nervös wirst.",
+      "hero.download": "Download",
+      "hero.how": "So geht's",
+      "hero.note": "Kostenlos · Windows, macOS, Android & iOS · Braucht Geode",
+      "hero.scroll": "Scroll, um das Level zu spielen ↓",
+      "demo.title": "Ein Herz, das mit deinem schlägt",
+      "demo.lead": "Ein kleines Herz in der Ecke schlägt in deinem echten Puls und wird von grün über gelb bis rot, wenn es spannend wird.",
+      "demo.zonesTitle": "Farben, die zu deinem Herz passen",
+      "demo.zonesText": "Jedes Herz ist anders. Während du spielst, lernt die Mod deinen normalen Puls und legt grün, gelb und rot drumherum – egal ob du sonst bei 70 oder bei 110 liegst.",
+      "demo.now": "Gerade:",
+      "demo.stylesTitle": "Such dir dein Herz aus",
+      "zone.calm": "ruhig", "zone.tense": "angespannt", "zone.panic": "Panik",
+      "map.title": "Die Heart Map",
+      "map.lead": "Jeder Versuch wird entlang deines Fortschritts im Level aufgezeichnet. Nach ein paar Runs siehst du ganz genau, welche Stelle dich fertig macht.",
+      "map.axis": "0% · · · · · · · · · · · · Level-Fortschritt · · · · · · · · · · · · 100%",
+      "features.title": "Was drin ist",
+      "features.lead": "Alles, um zu sehen, was dein Herz so treibt – und nichts, was du nicht brauchst.",
+      "f1.t": "Live-Puls", "f1.d": "HypeRate-ID eintragen und dein Puls ist in jedem Level dabei. Funktioniert mit den meisten Smartwatches, Fitnessbändern und Brustgurten.",
+      "f2.t": "Heart Map", "f2.d": "Dein Puls von 0 bis 100 % für jeden Versuch, mit Peak, Durchschnitt und einer Heatmap des Levels über alle Versuche.",
+      "f3.t": "Statistik pro Level", "f3.d": "Dein bester Run, dein höchster Puls und dein ruhigster Clear – für jedes Level gespeichert.",
+      "f4.t": "Ice Cold Mode", "f4.d": "Setz dir ein Puls-Limit. Gehst du drüber, stirbst du. Macht das Spiel nur schwerer, nie leichter.",
+      "f5.t": "Ganz nach deinem Geschmack", "f5.d": "Schieb die Anzeige, wohin du willst, ändere Größe und Deckkraft und wähl eins von vier Herzen.",
+      "f6.t": "Privat von Anfang an", "f6.d": "Die Mod empfängt nur deinen Puls. Nichts über dein Spiel verlässt dein Gerät.",
+      "install.title": "So bekommst du sie",
+      "install.lead": "Dauert etwa zwei Minuten. Du brauchst Geometry Dash mit dem Mod-Loader Geode.",
+      "s1.t": "HypeRate holen", "s1.d": "Installier die HypeRate-App, verbinde deine Uhr oder deinen Gurt und kopier deine HypeRate-ID.",
+      "s2.t": "Mod installieren", "s2.html": "Lade <code>hyperate.gdhyperate.geode</code> herunter. Öffne in Geometry Dash <b>Geode → Einstellungen → Install from file</b> und wähl die Datei aus. Geode zeigt bei Dateien außerhalb der Mod-Liste kurz eine Warnung – das ist normal.",
+      "s3.t": "ID eintragen", "s3.d": "Öffne die Mod-Einstellungen, füg deine ID ein und drück auf Apply. Die Status-Zeile wird grün, sobald dein Puls ankommt. Fertig!",
+      "faq.title": "Fragen",
+      "q1.q": "Brauche ich einen speziellen Sensor?", "q1.a": "Nein. Alles, was mit der HypeRate-App funktioniert, klappt auch hier – die meisten Smartwatches, Fitnessbänder und Brustgurte. Kein Sensor zur Hand? Schalte in den Mod-Einstellungen den Demo Mode ein und probier alles mit einem simulierten Puls aus.",
+      "q2.q": "Kostet das was?", "q2.a": "Nein, die Mod ist kostenlos. Du brauchst nur einen HypeRate-Account für deinen Puls.",
+      "q3.q": "Wie bekomme ich Updates?", "q3.a": "Die Mod schaut beim Spielstart nach neuen Versionen und sagt dir im Hauptmenü Bescheid. Ein Klick bringt dich zum Download.",
+      "q4.q": "Warum ist sie nicht in der Geode-Mod-Liste?", "q4.a": "Wir haben die Mod mit viel Hilfe von KI-Tools gebaut, und die Geode-Mod-Liste nimmt solche Mods nicht auf. Deshalb gibt es sie hier. Getestet haben wir alles selbst, und wir pflegen sie weiter.",
+      "q5.q": "Macht sie das Spiel leichter?", "q5.a": "Niemals. Die Anzeige ist nur Information, und der Ice Cold Mode kann dich nur öfter sterben lassen.",
+      "footer.note": "Gemacht von HypeRate. Geometry Dash ist ein Spiel von RobTop Games – diese Mod steht in keiner Verbindung zu RobTop und wird nicht von RobTop unterstützt."
+    }
+  };
+  var original = {};
+  document.querySelectorAll("[data-i18n]").forEach(function (el) {
+    original[el.getAttribute("data-i18n")] = el.innerHTML;
+  });
+
+  var currentLang = "en";
+  function setLang(lang) {
+    currentLang = lang;
+    document.documentElement.lang = lang;
+    document.querySelectorAll("[data-i18n]").forEach(function (el) {
+      var key = el.getAttribute("data-i18n");
+      var text = lang === "en" ? original[key] : (T[lang] && T[lang][key]);
+      if (text != null) el.innerHTML = text;
+    });
+    document.querySelectorAll(".lang button").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.lang === lang));
+    });
+    try { localStorage.setItem("lang", lang); } catch (e) {}
+    updateZone(lastBpm);
+  }
+  document.querySelectorAll(".lang button").forEach(function (b) {
+    b.addEventListener("click", function () { setLang(b.dataset.lang); });
+  });
+
+  // ---------- Scroll = level progress ----------
+  var fill = document.getElementById("progressFill");
+  var label = document.getElementById("progressLabel");
+  function onScroll() {
+    var max = document.documentElement.scrollHeight - window.innerHeight;
+    var p = max > 0 ? Math.min(100, Math.max(0, window.scrollY / max * 100)) : 0;
+    fill.style.width = p + "%";
+    label.textContent = Math.round(p) + "%";
+  }
+  window.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+
+  // ---------- Background blocks ----------
+  var blocks = document.getElementById("blocks");
+  var sizes = [[6, 10, 140, 140], [78, 8, 180, 110], [14, 52, 110, 170], [70, 48, 150, 150], [40, 18, 90, 90], [88, 62, 120, 90]];
+  sizes.forEach(function (s) {
+    var el = document.createElement("span");
+    el.style.left = s[0] + "%"; el.style.top = s[1] + "%";
+    el.style.width = s[2] + "px"; el.style.height = s[3] + "px";
+    blocks.appendChild(el);
+  });
+
+  // ---------- Live HUD demo ----------
+  var heart = document.getElementById("hudHeart");
+  var bpmEl = document.getElementById("hudBpm");
+  var pill = document.getElementById("zonePill");
+  var colors = { calm: "#50e678", tense: "#ffcd3c", panic: "#ff3750" };
+  var lastBpm = 72;
+
+  function zoneOf(bpm) { return bpm < 95 ? "calm" : bpm < 125 ? "tense" : "panic"; }
+  function updateZone(bpm) {
+    var zone = zoneOf(bpm);
+    bpmEl.style.color = colors[zone];
+    pill.style.background = colors[zone];
+    var key = "zone." + zone;
+    pill.textContent = currentLang === "en" ? zone : T.de[key];
+    heart.style.setProperty("--c", colors[zone]);
+  }
+
+  // A calm -> panic -> calm "run" of about 24 seconds
+  var t = 0;
+  setInterval(function () {
+    t += 1;
+    var wave = Math.sin(t / 24 * Math.PI * 2 - Math.PI / 2) * .5 + .5;
+    var bpm = Math.round(72 + wave * 90 + (Math.random() * 6 - 3));
+    lastBpm = bpm;
+    bpmEl.textContent = bpm;
+    updateZone(bpm);
+  }, 1000);
+
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function beat() {
+    if (!reduce) {
+      heart.classList.remove("beat");
+      void heart.offsetWidth;
+      heart.classList.add("beat");
+    }
+    setTimeout(beat, 60000 / lastBpm);
+  }
+  beat();
+
+  document.querySelectorAll(".style-btn").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var style = b.dataset.style;
+      var file = "assets/heart_" + style + ".png";
+      heart.querySelector("img").src = file;
+      heart.style.setProperty("--m", "url(" + file + ")");
+      heart.classList.toggle("pixel", style === "pixel");
+      document.querySelectorAll(".style-btn").forEach(function (o) {
+        o.setAttribute("aria-pressed", String(o === b));
+      });
+    });
+  });
+
+  // ---------- Draw the chart when it scrolls into view ----------
+  var chart = document.getElementById("chart");
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(function (entries, obs) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { chart.classList.add("visible"); obs.disconnect(); }
+      });
+    }, { threshold: .4 }).observe(chart);
+  } else {
+    chart.classList.add("visible");
+  }
+
+  // ---------- Initial language ----------
+  var saved = null;
+  try { saved = localStorage.getItem("lang"); } catch (e) {}
+  var browserDe = (navigator.language || "").toLowerCase().indexOf("de") === 0;
+  setLang(saved || (browserDe ? "de" : "en"));
+})();
+</script>
+</body>
+</html>
