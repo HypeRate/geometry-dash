@@ -8,7 +8,7 @@
 	},
 	"id": "hyperate.gdhyperate",
 	"name": "HypeRate",
-	"version": "v0.1.0",
+	"version": "v1.0.0",
 	"developer": "HypeRate",
 	"description": "Your real heart rate, live in Geometry Dash.",
 	"repository": "https://github.com/HypeRate/geometry-dash",
