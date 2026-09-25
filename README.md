@@ -14,7 +14,7 @@ This is the official [HypeRate](https://www.hyperate.io) mod for Geometry Dash. 
 
 **The Heart Map.** This is the part we're most excited about. Every attempt gets recorded against your progress through the level, so you end up with a curve of your pulse from 0 to 100%. There's also a colored strip under the progress bar that builds up over time: after a while you can literally see which part of a level gets to you. The mod also remembers your best run, your highest heart rate and your calmest clear for every level. All of that stays on your own device.
 
-![The Heart Map after completing Stereo Madness](docs/screenshots/heart-map.png)
+![The Heart Map after an attempt on Stereo Madness](docs/screenshots/heart-map.png)
 
 **Ice Cold Mode.** For the brave ones: set a heart rate limit and if you go over it, you die. It only ever makes the game harder, never easier. Good luck with that wave part.
 
